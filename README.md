@@ -1,20 +1,73 @@
-## 🏝️ Lian\_Yu (TryHackMe) - Write-up
+# 🏹 Laboratorio: Compromiso Total de "Lian\_Yu" (TryHackMe - ID [Room ID])
 
-Este repositorio contiene la documentación completa y detallada (write-up) del desafío de ciberseguridad **Lian\_Yu** de TryHackMe.
-
-La máquina, de dificultad fácil, está fuertemente tematizada en la serie *Arrow* de DC Comics (Oliver Queen, Slade Wilson/Deathstroke), y pone a prueba habilidades fundamentales de un pentester.
-
-**Metodología y Técnicas Demostradas:**
-
-* **Enumeración:** Nmap, Gobuster, CeWL.
-* **Acceso Inicial:** Descubrimiento y decodificación de tokens (**Base58**) y credenciales.
-* **Análisis Forense:** Extracción de datos ocultos mediante **Esteganografía (StegSeek)** en archivos de imagen.
-* **Pivotaje:** Obtención de credenciales de un segundo usuario.
-* **Escalada de Privilegios:** Identificación y explotación de binarios **SUID (`pkexec`)** utilizando recursos como **GTFOBins**.
+Este documento detalla el análisis de vulnerabilidades y el proceso de Penetration Test (Pentest) realizado sobre la máquina objetivo `10.10.46.117`. El ejercicio culminó con éxito, logrando el **acceso root** y la obtención de las flags de usuario y administrador.
 
 ---
-**¡Misión cumplida: Acceso total como Root!**
 
-🏹 Laboratorio: Compromiso Total de "Lian_Yu" (TryHackMe - ID [Room ID])Este documento detalla el análisis de vulnerabilidades y el proceso de Penetration Test (Pentest) realizado sobre la máquina objetivo 10.10.46.117. El ejercicio culminó con éxito, logrando el acceso root y la obtención de las flags de usuario y administrador.1. 📌 Resumen EjecutivoEl objetivo fue comprometido debido a una secuencia de pistas temáticas (vigilante) y fallos críticos en la gestión de esteganografía que llevaron a la escalada de privilegios SUID.Estado del ObjetivoTipo de CompromisoVulnerabilidad CríticaImpactoCOMPROMETIDOControl Total (Root)Mala Configuración de SUID (pkexec)CRÍTICOBanderas Obtenidas:User Flag: THM{P3O P7E_K33P_53CR3T5_C0MPUT3R5_D0N'T}Root Flag: THM{MY_WORD_IS_MY_B0ND_IF_I_ACC3PT_YOUR_CONTRACT_THEN_IT_WILL_BE_C0MPL3T3D_OR_I'LL_BE_D34D}2. 🛡️ Metodología de Ataque (PTES/OSSTMM)El ataque se ejecutó siguiendo una metodología estructurada, donde cada pista temática (Arrow/Deathstroke) se convirtió en un componente crítico para el avance.Fase A: Reconocimiento y Obtención de AccesoPasoTarea ClaveHerramientaResultado y Pista1.Escaneo de ServiciosNmapPuertos 21 (FTP), 22 (SSH) y 80 (HTTP) abiertos.2.Enumeración WebGobusterDirectorios /island/ y /island/2100m/ encontrados.3.Descubrimiento Credencialescurl / Base58Token RTy8yhB0dscX decodificado a !#th3h00d.4.Acceso InicialFTPAcceso como usuario vigilante:!#th3h00d.5.Pista de EsteganografíaStegSeekArchivo aa.jpg contenía un ZIP con contraseña password.6.Obtención de Credencialunzip / cat shadoCredencial para el usuario slade:M3tahuman.Fase B: Post-Explotación y Escalada de PrivilegiosPasoTarea ClaveHerramientaResultado y Vector7.Acceso de UsuariosshAcceso como usuario slade y obtención de user.txt.8.Detección de Vectorfind / -perm -u=sIdentificación del binario crítico: /usr/bin/pkexec con el bit SUID.9.Referencia de ExploitGTFOBinsConfirmación del método de explotación para pkexec SUID.10.Escalada de Privilegiossudo pkexecObtención de una shell de root (#) tras autenticación.11.Impacto Finalcat root.txtLectura de la root flag, confirmando el compromiso total.3. 🚨 Análisis de Vulnerabilidades Encontradas3.1. Vulnerabilidad Crítica: Binario SUID Inseguro (pkexec)Vector: Escalada de Privilegios.Descripción: El binario /usr/bin/pkexec (PolicyKit) estaba configurado con el bit SUID. Aunque la explotación directa de la vulnerabilidad "Pwnkit" no se confirmó, el binario permitió la ejecución de una shell con privilegios de root después de una simple autenticación con la contraseña del usuario slade, lo que indica una configuración extremadamente laxa o un exploit funcional en el entorno de ejecución.Bash# Comando de Explotación (Referencia GTFOBins - SUID):
-sudo pkexec /bin/sh
-3.2. Vulnerabilidad Alta: Uso de Esteganografía y Contraseñas DébilesVector: Acceso Inicial.Descripción: El sistema dependía de métodos de esteganografía con contraseñas extremadamente débiles (password), permitiendo al atacante descubrir las credenciales del usuario slade (M3tahuman) a través de la fuerza bruta automática (stegseek). Además, la contraseña inicial (!#th3h00d) era vulnerable a la decodificación trivial (Base58) y el ataque de fuerza bruta.4. 📝 Recomendaciones de Seguridad (Mitigación)Para evitar la repetición de este compromiso, se recomienda lo siguiente:Gestión de Privilegios (SUID):Eliminar el bit SUID de binarios que no lo requieran estrictamente para su funcionamiento (pkexec, etc.).Actualizar el sistema operativo para aplicar parches contra vulnerabilidades SUID críticas como "Pwnkit" que afectan a pkexec.Seguridad de Archivos y Datos Ocultos:Nunca utilizar contraseñas débiles o de diccionario (password) para proteger archivos o datos esteganográficos.Evitar almacenar pistas de acceso (como .other_user o archivos con extensiones no estándar) en directorios accesibles a usuarios de bajo privilegio.Política de Credenciales:Implementar una política de contraseñas robusta.Deshabilitar el acceso FTP o restringirlo a usuarios y directorios específicos.5. 💻 Apéndice B: Registro Detallado de Comandos#FasePropósitoComando Ejecutado1ReconocimientoEscaneo de servicios.nmap -sC -sV 10.10.46.1172Enumeración WebDescubrir ruta.gobuster dir -u http://10.10.46.117/ -w [wordlist]...3Enumeración WebVer contenido y token.curl http://10.10.46.117/island/4DescubrimientoDecodificar Base58 y usar FTP.ftp vigilante@10.10.46.1175Post-ExplotaciónDescargar archivos críticos.ftp> get .other_user, get aa.jpg6Post-ExplotaciónForzar esteganografía.stegseek aa.jpg7Post-ExplotaciónObtener credencial.unzip aa.jpg.out y cat shado8Control UsuarioConexión y user.txt.ssh slade@10.10.46.117 seguido de cat user.txt9EscaladaBuscar binarios SUID.find / -perm -u=s -type f 2>/dev/null10Control TotalEjecutar el Exploit.sudo pkexec /bin/sh11Control TotalObtención de root.txt.cat /root/root.txt
+## 1. 📌 Resumen Ejecutivo
+
+El objetivo fue comprometido debido a una secuencia de pistas temáticas (vigilante) y fallos críticos en la gestión de esteganografía que llevaron a la escalada de privilegios SUID.
+
+| Estado del Objetivo | Tipo de Compromiso | Vulnerabilidad Crítica | Impacto |
+| :--- | :--- | :--- | :--- |
+| **COMPROMETIDO** | Control Total (Root) | Mala Configuración de **SUID (`pkexec`)** | **CRÍTICO** |
+
+**Banderas Obtenidas:**
+
+* **User Flag:** `THM{P3O P7E_K33P_53CR3T5_C0MPUT3R5_D0N'T}`
+* **Root Flag:** `THM{MY_WORD_IS_MY_B0ND_IF_I_ACC3PT_YOUR_CONTRACT_THEN_IT_WILL_BE_C0MPL3T3D_OR_I'LL_BE_D34D}`
+
+---
+
+## 2. 🛡️ Metodología de Ataque (PTES/OSSTMM)
+
+El ataque se ejecutó siguiendo una metodología estructurada, donde cada pista temática (Arrow/Deathstroke) se convirtió en un componente crítico para el avance.
+
+### Fase A: Reconocimiento y Obtención de Acceso
+
+| Paso | Tarea Clave | Herramienta | Resultado y Pista |
+| :--- | :--- | :--- | :--- |
+| **1.** | Escaneo de Servicios | Nmap | Puertos **21 (FTP)**, **22 (SSH)** y **80 (HTTP)** abiertos. |
+| **2.** | Enumeración Web | Gobuster | Directorios `/island/` y `/island/2100m/` encontrados. |
+| **3.** | Descubrimiento Credenciales | curl / Base58 | Token **`RTy8yhB0dscX`** decodificado a **`!#th3h00d`**. |
+| **4.** | Acceso Inicial | FTP | Acceso como usuario **`vigilante`**:`!#th3h00d`. |
+| **5.** | Pista de Esteganografía | StegSeek | Archivo `aa.jpg` contenía un ZIP con contraseña **`password`**. |
+| **6.** | Obtención de Credencial | `unzip` / `cat shado` | Credencial para el usuario **`slade`**:`M3tahuman`. |
+
+### Fase B: Post-Explotación y Escalada de Privilegios
+
+| Paso | Tarea Clave | Herramienta | Resultado y Vector |
+| :--- | :--- | :--- | :--- |
+| **7.** | Acceso de Usuario | ssh | Acceso como usuario **`slade`** y obtención de `user.txt`. |
+| **8.** | Detección de Vector | `find / -perm -u=s` | Identificación del binario crítico: **/usr/bin/pkexec** con el *bit* SUID. |
+| **9.** | Referencia de Exploit | GTFOBins | Confirmación del método de explotación para `pkexec` SUID. |
+| **10.** | Escalada de Privilegios | `sudo pkexec` | Obtención de una **shell de root (#)** tras autenticación. |
+| **11.** | Impacto Final | `cat root.txt` | Lectura de la *root flag*, confirmando el compromiso total. |
+
+---
+
+## 3. 🚨 Análisis de Vulnerabilidades Encontradas
+
+### 3.1. Vulnerabilidad Crítica: Binario SUID Inseguro (`pkexec`)
+
+**Vector:** Escalada de Privilegios.
+
+**Descripción:** El binario `/usr/bin/pkexec` (PolicyKit) estaba configurado con el *bit* SUID. El binario permitió la ejecución de una *shell* con privilegios de `root` después de una simple autenticación con la contraseña del usuario `slade`, lo que indica una configuración de permisos insegura.
+
+```bash
+
+## 5. 💻 Apéndice B: Registro Detallado de Comandos
+
+| \# | Fase | Propósito | Comando Ejecutado |
+| :--- | :--- | :--- | :--- |
+| **1** | Reconocimiento | Escaneo de servicios. | `nmap -sC -sV 10.10.46.117` |
+| **2** | Enumeración Web | Descubrir ruta. | `gobuster dir -u http://10.10.46.117/ -w [wordlist]...` |
+| **3** | Enumeración Web | Ver contenido y token. | `curl http://10.10.46.117/island/` |
+| **4** | Descubrimiento | Decodificar Base58 y usar FTP. | `ftp vigilante@10.10.46.117` |
+| **5** | Post-Explotación | Descargar archivos críticos. | `ftp> get .other_user`, `get aa.jpg` |
+| **6** | Post-Explotación | Forzar esteganografía. | `stegseek aa.jpg` |
+| **7** | Post-Explotación | Obtener credencial. | `unzip aa.jpg.out` y `cat shado` |
+| **8** | Control Usuario | Conexión y `user.txt`. | `ssh slade@10.10.46.117` seguido de `cat user.txt` |
+| **9** | Escalada | Buscar binarios SUID. | `find / -perm -u=s -type f 2>/dev/null` |
+| **10** | Control Total | Ejecutar el Exploit. | `sudo pkexec /bin/sh` |
+| **11** | Control Total | Obtención de `root.txt`. | `cat /root/root.txt` |
